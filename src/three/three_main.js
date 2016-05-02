@@ -58,12 +58,12 @@ var ThreeMain = function(model, element, canvasElement, opts) {
   this.elementWidth;
 
   this.itemSelectedCallbacks = JQUERY.Callbacks(); // item
-  this.itemUnselectedCallbacks = JQUERY.Callbacks(); 
+  this.itemUnselectedCallbacks = JQUERY.Callbacks();
 
   this.wallClicked = JQUERY.Callbacks(); // wall
   this.floorClicked = JQUERY.Callbacks(); // floor
   this.nothingClicked = JQUERY.Callbacks();
-  
+
   function init() {
     THREE.ImageUtils.crossOrigin = "";
 
@@ -74,9 +74,9 @@ var ThreeMain = function(model, element, canvasElement, opts) {
       preserveDrawingBuffer: true // required to support .toDataURL()
     });
     renderer.autoClear = false,
-    renderer.shadowMapEnabled = true;
+    renderer.shadowMap.enabled = true;
     renderer.shadowMapSoft = true;
-    renderer.shadowMapType = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     var skybox = new ThreeSkybox(scene);
 
@@ -94,14 +94,14 @@ var ThreeMain = function(model, element, canvasElement, opts) {
     if (options.resize) {
       JQUERY(window).resize(scope.updateWindowSize);
     }
-    
+
     // setup camera nicely
     scope.centerCamera();
     model.floorplan.fireOnUpdatedRooms(scope.centerCamera);
 
     var lights = new ThreeLights(scene, model.floorplan);
 
-    floorplan = new ThreeFloorplan(scene, 
+    floorplan = new ThreeFloorplan(scene,
       model.floorplan, scope.controls);
 
     animate();
@@ -177,14 +177,14 @@ var ThreeMain = function(model, element, canvasElement, opts) {
       renderer.clear();
       renderer.render(scene.getScene(), camera);
       renderer.clearDepth();
-      renderer.render(hud.getScene(), camera); 
+      renderer.render(hud.getScene(), camera);
     }
     lastRender = Date.now();
   };
 
   function animate() {
     var delay = 50;
-    setTimeout(function() { 
+    setTimeout(function() {
       requestAnimationFrame(animate);
       }, delay);
     render();
@@ -218,6 +218,10 @@ var ThreeMain = function(model, element, canvasElement, opts) {
 
     renderer.setSize(scope.elementWidth, scope.elementHeight);
     needsUpdate = true;
+  }
+
+  this.redrawWallItems = function() {
+    scene.redrawWallItems();
   }
 
   this.centerCamera = function() {

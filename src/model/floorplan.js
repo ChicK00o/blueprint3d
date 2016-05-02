@@ -119,21 +119,21 @@ var Floorplan = function() {
 
   this.overlappedCorner = function(x, y, tolerance) {
     tolerance = tolerance || defaultTolerance;
-    for (i = 0; i < corners.length; i++) {
+    for (var i = 0; i < corners.length; i++) {
       if (corners[i].distanceFrom(x, y) < tolerance) {
         //console.log("got corner")
         return corners[i];
-      }      
+      }
     }
     return null;
   }
 
   this.overlappedWall = function(x, y, tolerance) {
     tolerance = tolerance || defaultTolerance;
-    for (i = 0; i < walls.length; i++) {
+    for (var i = 0; i < walls.length; i++) {
       if (walls[i].distanceFrom(x, y) < tolerance) {
         return walls[i];
-      }      
+      }
     }
     return null;
   }
@@ -144,9 +144,8 @@ var Floorplan = function() {
     var floorplan = {
       corners: {},
       walls: [],
-      wallTextures: [],
-      floorTextures: {}
-    }
+      rooms: []
+    };
     utils.forEach(corners, function(corner) {
       floorplan.corners[corner.id] = {
         'x': corner.x,
@@ -158,10 +157,29 @@ var Floorplan = function() {
         'corner1': wall.getStart().id,
         'corner2': wall.getEnd().id,
         'frontTexture': wall.frontTexture,
-        'backTexture': wall.backTexture
+        'backTexture': wall.backTexture,
+        'frontEdge': wall.frontEdge && getEdgeObject(wall.frontEdge),
+        'backEdge': wall.backEdge && getEdgeObject(wall.backEdge),
+        'isShared': !!wall.backEdge && !!wall.frontEdge
       });
     });
-    floorplan.newFloorTextures = this.floorTextures;
+    utils.forEach(rooms, function(room) {
+      var roomCorners = room.corners.map(function(corner){
+        return corner.id;
+      });
+      floorplan.rooms.push({
+        'floorPlane': {
+          'corners': roomCorners,
+          'planeUuid': room.floorPlane.uuid,
+          'vertices': getGeometryVertices(room.floorPlane.geometry.vertices),
+          'faces': getGeometryFaces(room.floorPlane.geometry.faces),
+          'faceVertexUvs': getFaceVertexUvs(room.floorPlane.geometry.faceVertexUvs),
+          'texture': room.getTexture() && room.getTexture().url
+        },
+        'edges': getRoomEdges(room.edgePointer)
+      });
+    });
+    // floorplan.newFloorTextures = this.floorTextures;
     return floorplan;
   }
 
@@ -171,7 +189,7 @@ var Floorplan = function() {
     var corners = {};
     if (floorplan == null || !('corners' in floorplan) || !('walls' in floorplan)) {
       return
-    } 
+    }
     for (var id in floorplan.corners) {
       var corner = floorplan.corners[id];
       corners[id] = this.newCorner(corner.x, corner.y, id);
@@ -191,7 +209,7 @@ var Floorplan = function() {
       this.floorTextures = floorplan.newFloorTextures;
     }
 
-    this.update();    
+    this.update();
     this.roomLoadedCallbacks.fire();
   }
 
@@ -284,7 +302,7 @@ var Floorplan = function() {
         ret = new THREE.Vector3( (xMin + xMax) * 0.5, 0, (zMin + zMax) * 0.5 );
       } else {
         // size
-        ret = new THREE.Vector3( (xMax - xMin), 0, (zMax - zMin) );        
+        ret = new THREE.Vector3( (xMax - xMin), 0, (zMax - zMin) );
       }
     }
     return ret;
@@ -295,7 +313,7 @@ var Floorplan = function() {
     // kinda hacky
     // find orphaned wall segments (i.e. not part of rooms) and
     // give them edges
-    orphanWalls = []
+    var orphanWalls = []
     utils.forEach(walls, function(wall) {
       if (!wall.backEdge && !wall.frontEdge) {
         wall.orphan = true;
@@ -326,12 +344,12 @@ function findRooms(corners) {
       nextCorner.y - currentCorner.y);
     return theta;
   }
-  
+
   function removeDuplicateRooms(roomArray) {
     var results = [];
     var lookup = {};
     var hashFunc = function(corner) {
-      return corner.id 
+      return corner.id
     };
     var sep = '-';
     for (var i = 0; i < roomArray.length; i++) {
@@ -350,9 +368,9 @@ function findRooms(corners) {
         lookup[str] = true;
       }
     }
-    return results; 
+    return results;
   }
-  
+
   function findTightestCycle(firstCorner, secondCorner) {
     var stack = [];
     var next = {
@@ -362,35 +380,35 @@ function findRooms(corners) {
     var visited = {};
     visited[firstCorner.id] = true;
 
-    while ( next ) {  
+    while ( next ) {
       // update previous corners, current corner, and visited corners
       var currentCorner = next.corner;
-      visited[currentCorner.id] = true; 
-    
+      visited[currentCorner.id] = true;
+
       // did we make it back to the startCorner?
       if ( next.corner === firstCorner && currentCorner !== secondCorner ) {
-        return next.previousCorners;  
+        return next.previousCorners;
       }
-      
+
       var addToStack = [];
-      var adjacentCorners = next.corner.adjacentCorners();  
+      var adjacentCorners = next.corner.adjacentCorners();
       for ( var i = 0; i < adjacentCorners.length; i++ ) {
         var nextCorner = adjacentCorners[i];
-            
+
         // is this where we came from?
         // give an exception if its the first corner and we aren't at the second corner
-        if ( nextCorner.id in visited &&  
+        if ( nextCorner.id in visited &&
           !( nextCorner === firstCorner && currentCorner !== secondCorner )) {
           continue;
         }
-        
-        // nope, throw it on the queue  
-        addToStack.push( nextCorner );  
+
+        // nope, throw it on the queue
+        addToStack.push( nextCorner );
       }
-    
+
       var previousCorners = next.previousCorners.slice(0);
-      previousCorners.push( currentCorner );  
-      if (addToStack.length > 1) {  
+      previousCorners.push( currentCorner );
+      if (addToStack.length > 1) {
         // visit the ones with smallest theta first
         var previousCorner = next.previousCorners[next.previousCorners.length - 1];
         addToStack.sort(function(a,b) {
@@ -398,21 +416,21 @@ function findRooms(corners) {
               calculateTheta(previousCorner, currentCorner, a));
         });
       }
-    
+
       if (addToStack.length > 0) {
         // add to the stack
         utils.forEach(addToStack, function(corner) {
           stack.push({
             corner: corner,
             previousCorners: previousCorners
-          });   
+          });
         });
       }
-    
+
       // pop off the next one
       next = stack.pop();
     }
-    return [];  
+    return [];
   }
 
   // find tightest loops, for each corner, for each adjacent
@@ -438,6 +456,80 @@ function findRooms(corners) {
   //  });
   //});
   return uniqueCCWLoops;
+}
+
+function vector2ToCoords (vector2) {
+  return {
+    x: vector2.x,
+    y: vector2.y
+  };
+}
+
+function vector3ToCoords (vector3) {
+  return {
+    x: vector3.x,
+    y: vector3.y,
+    z: vector3.z
+  };
+}
+
+function face3ToArray (face3) {
+  return [face3.a, face3.b, face3.c];
+}
+
+function getGeometryVertices (floorVertices) {
+  return floorVertices.map(function(vertex){
+    return vector3ToCoords(vertex);
+  });
+}
+
+function getGeometryFaces (faces) {
+  return faces.map(function(face){
+    return face3ToArray(face);
+  });
+}
+
+function getFaceVertexUvs (faceVertexUvs) {
+  return faceVertexUvs.map(function(face){
+    return face.map(function(faceVertices){
+      return faceVertices.map(function(vertex){
+        return vector2ToCoords(vertex);
+      });
+    });
+  });
+}
+
+function getEdgeObject (edge) {
+  var edgeCorners = [];
+  edgeCorners.push(
+    edge.getStart() && edge.getStart().id,
+    edge.getEnd() && edge.getEnd().id
+  );
+  return {
+    planeUuid: edge.plane.uuid,
+    corners: edgeCorners,
+    vertices: getGeometryVertices(edge.plane.geometry.vertices),
+    faces: getGeometryFaces(edge.plane.geometry.faces),
+    faceVertexUvs: getFaceVertexUvs(edge.plane.geometry.faceVertexUvs),
+    texture: edge.getTexture() && edge.getTexture().url
+  }
+}
+
+function getRoomEdges (edgePointer) {
+  var edge = edgePointer;
+  var edges = [];
+
+  while (true) {
+    if (edge.next === edgePointer) {
+      // push edge pointer first to maintain sequence
+      edges.push(getEdgeObject(edge));
+      break;
+    } else {
+      edges.push(getEdgeObject(edge));
+      edge = edge.next;
+    }
+  }
+  return edges;
 }
 
 module.exports = Floorplan;

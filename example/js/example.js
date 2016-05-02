@@ -1,4 +1,3 @@
-
 /*
  * Camera Buttons
  */
@@ -19,7 +18,7 @@ var CameraButtons = function(blueprint3d) {
   function init() {
     // Camera controls
     $("#zoom-in").click(zoomIn);
-    $("#zoom-out").click(zoomOut);  
+    $("#zoom-out").click(zoomOut);
     $("#zoom-in").dblclick(preventDefault);
     $("#zoom-out").dblclick(preventDefault);
 
@@ -83,7 +82,7 @@ var CameraButtons = function(blueprint3d) {
 
 /*
  * Context menu for selected item
- */ 
+ */
 
 var ContextMenu = function(blueprint3d) {
 
@@ -183,7 +182,7 @@ var ModalEffects = function(blueprint3d) {
      blueprint3d.model.scene.itemLoadedCallbacks.add(function() {
       itemsLoading -= 1;
       update();
-    });   
+    });
 
     update();
   }
@@ -203,6 +202,7 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
   var ACTIVE_CLASS = "active";
 
   var tabs = {
+    "DETAILS" : $("#details_tab"),
     "FLOORPLAN" : $("#floorplan_tab"),
     "SHOP" : $("#items_tab"),
     "DESIGN" : $("#design_tab")
@@ -215,6 +215,10 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
     "DEFAULT" : {
       "div" : $("#viewer"),
       "tab" : tabs.DESIGN
+    },
+    "DETAILS" : {
+      "div" : $("#details"),
+      "tab" : tabs.DETAILS
     },
     "FLOORPLAN" : {
       "div" : $("#floorplanner"),
@@ -236,6 +240,8 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
     }
 
     $("#update-floorplan").click(floorplanUpdate);
+
+    $("#saveDetails").click(floorplanUpdate);
 
     initLeftMenu();
 
@@ -266,7 +272,7 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
       }
     }
   }
-  
+
   function setCurrentState(newState) {
 
     if (currentState == newState) {
@@ -276,7 +282,7 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
     // show the right tab as active
     if (currentState.tab !== newState.tab) {
       if (currentState.tab != null) {
-        currentState.tab.removeClass(ACTIVE_CLASS);          
+        currentState.tab.removeClass(ACTIVE_CLASS);
       }
       if (newState.tab != null) {
         newState.tab.addClass(ACTIVE_CLASS);
@@ -294,18 +300,19 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
     if (newState == scope.states.FLOORPLAN) {
       floorplanControls.updateFloorplanView();
       floorplanControls.handleWindowResize();
-    } 
+    }
 
     if (currentState == scope.states.FLOORPLAN) {
       blueprint3d.model.floorplan.update();
     }
 
     if (newState == scope.states.DEFAULT) {
+      blueprint3d.three.redrawWallItems();
       blueprint3d.three.updateWindowSize();
     }
- 
+
     // set new state
-    handleWindowResize();    
+    handleWindowResize();
     currentState = newState;
 
     scope.stateChangeCallbacks.fire(newState);
@@ -377,19 +384,19 @@ var TextureSelector = function (blueprint3d, sideMenu) {
 
   function wallClicked(halfEdge) {
     currentTarget = halfEdge;
-    $("#floorTexturesDiv").hide();  
-    $("#wallTextures").show();  
+    $("#floorTexturesDiv").hide();
+    $("#wallTextures").show();
   }
 
   function floorClicked(room) {
     currentTarget = room;
-    $("#wallTextures").hide();  
-    $("#floorTexturesDiv").show();  
+    $("#wallTextures").hide();
+    $("#floorTexturesDiv").show();
   }
 
   function reset() {
-    $("#wallTextures").hide();  
-    $("#floorTexturesDiv").hide();  
+    $("#wallTextures").hide();
+    $("#floorTexturesDiv").hide();
   }
 
   init();
@@ -463,7 +470,7 @@ var ViewerFloorplanner = function(blueprint3d) {
   };
 
   init();
-}; 
+};
 
 var mainControls = function(blueprint3d) {
   var blueprint3d = blueprint3d;
@@ -487,20 +494,83 @@ var mainControls = function(blueprint3d) {
     var a = window.document.createElement('a');
     var blob = new Blob([data], {type : 'text'});
     a.href = window.URL.createObjectURL(blob);
-    a.download = 'design.blueprint3d';
-    document.body.appendChild(a)
+    a.download = 'design.json';
+    document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a)
+    document.body.removeChild(a);
+  }
+
+  function sendConfig() {
+    if ( !window.userName || !window.userPhone ) {
+      return alert('Please enter details before generating VR model.');
+    }
+    var data = blueprint3d.model.exportSerialized();
+    var parsedData = JSON.parse(data);
+    parsedData.metadata = {
+      userName: window.userName,
+      userPhone: window.userPhone
+    };
+    return $.ajax({
+      url: 'http://10.1.22.72:3000/api/v1/config_infos',
+      data: JSON.stringify({'config': parsedData}),
+      contentType: 'application/json',
+      dataType: "json",
+      type: 'POST',
+      success: function(resp){
+        console.log(resp);
+        alert('VR model will be generated shortly and it will be notified to you via SMS. Thank you for using Valkyrie (Housing VR Panel)');
+      },
+      error: function(resp, errTxt){
+        console.log('Some error occured. Please try again. Error: ', errTxt);
+      }
+    });
   }
 
   function init() {
     $("#new").click(newDesign);
     $("#loadFile").change(loadDesign);
     $("#saveFile").click(saveDesign);
+    $("#sendConfig").click(sendConfig);
   }
 
   init();
 }
+
+/*
+ * Enter Details controls
+ */
+
+var DetailsController = function(blueprint3d) {
+
+  var canvasWrapper = '#details';
+
+  // buttons
+  var save = '#saveDetails';
+  var inputName = '#inputName';
+  var inputPhone1 = '#inputPhone1';
+
+  var scope = this;
+
+  var $saveEl = $(save);
+
+  var onChange = function() {
+    window.userName = $(inputName).val();
+    window.userPhone = $(inputPhone1).val();
+
+    if ( !window.userName || !window.userPhone ) {
+      $saveEl.attr('disabled', true);
+    } else {
+      $saveEl.removeAttr('disabled');
+    }
+  }
+
+  function init() {
+    $(inputName).keydown(onChange);
+    $(inputPhone1).keydown(onChange);
+  }
+
+  init();
+};
 
 /*
  * Initialize!
@@ -519,15 +589,18 @@ $(document).ready(function() {
   var blueprint3d = new Blueprint3d(opts);
 
   var modalEffects = new ModalEffects(blueprint3d);
+  var detailsController = new DetailsController(blueprint3d);
   var viewerFloorplanner = new ViewerFloorplanner(blueprint3d);
   var contextMenu = new ContextMenu(blueprint3d);
   var sideMenu = new SideMenu(blueprint3d, viewerFloorplanner, modalEffects);
-  var textureSelector = new TextureSelector(blueprint3d, sideMenu);        
+  var textureSelector = new TextureSelector(blueprint3d, sideMenu);
   var cameraButtons = new CameraButtons(blueprint3d);
   mainControls(blueprint3d);
 
   // This serialization format needs work
   // Load a simple rectangle room
-  data = '{"floorplan":{"corners":{"56d9ebd1-91b2-875c-799d-54b3785fca1f":{"x":630.555,"y":-227.58400000000006},"8f4a050d-e102-3c3f-5af9-3d9133555d76":{"x":294.64,"y":-227.58400000000006},"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359":{"x":294.64,"y":232.664},"254656bf-8a53-3987-c810-66b349f49b19":{"x":745.7439999999998,"y":232.664},"11d25193-4411-fbbf-78cb-ae7c0283164b":{"x":1044.7019999999998,"y":232.664},"edf0de13-df9f-cd6a-7d11-9bd13c36ce12":{"x":1044.7019999999998,"y":-105.66399999999999},"e7db8654-efe1-bda2-099a-70585874d8c0":{"x":745.7439999999998,"y":-105.66399999999999}},"walls":[{"corner1":"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","corner2":"254656bf-8a53-3987-c810-66b349f49b19","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/wallmap_yellow.png","stretch":true,"scale":null}},{"corner1":"254656bf-8a53-3987-c810-66b349f49b19","corner2":"e7db8654-efe1-bda2-099a-70585874d8c0","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/wallmap_yellow.png","stretch":true,"scale":null}},{"corner1":"56d9ebd1-91b2-875c-799d-54b3785fca1f","corner2":"8f4a050d-e102-3c3f-5af9-3d9133555d76","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/wallmap_yellow.png","stretch":true,"scale":null}},{"corner1":"8f4a050d-e102-3c3f-5af9-3d9133555d76","corner2":"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/wallmap_yellow.png","stretch":true,"scale":null}},{"corner1":"254656bf-8a53-3987-c810-66b349f49b19","corner2":"11d25193-4411-fbbf-78cb-ae7c0283164b","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0}},{"corner1":"11d25193-4411-fbbf-78cb-ae7c0283164b","corner2":"edf0de13-df9f-cd6a-7d11-9bd13c36ce12","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/light_brick.jpg","stretch":false,"scale":100}},{"corner1":"edf0de13-df9f-cd6a-7d11-9bd13c36ce12","corner2":"e7db8654-efe1-bda2-099a-70585874d8c0","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0}},{"corner1":"e7db8654-efe1-bda2-099a-70585874d8c0","corner2":"56d9ebd1-91b2-875c-799d-54b3785fca1f","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/wallmap_yellow.png","stretch":true,"scale":null}}],"wallTextures":[],"floorTextures":{},"newFloorTextures":{"11d25193-4411-fbbf-78cb-ae7c0283164b,254656bf-8a53-3987-c810-66b349f49b19,e7db8654-efe1-bda2-099a-70585874d8c0,edf0de13-df9f-cd6a-7d11-9bd13c36ce12":{"url":"https://blueprint-dev.s3.amazonaws.com/uploads/floor_wall_texture/file/light_fine_wood.jpg","scale":300}}},"items":[{"item_name":"Full Bed","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/39/ik_nordli_full.js","xpos":939.5525544513545,"ypos":50,"zpos":-15.988409993966997,"rotation":-1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Bedside table - White","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/353/cb-archnight-white_baked.js","xpos":1001.0862865204286,"ypos":31.15939942141,"zpos":86.4297300551338,"rotation":-0.7872847644705953,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Open Door","item_type":7,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/174/open_door.js","xpos":745.2440185546875,"ypos":110.5,"zpos":64.8291839065202,"rotation":-1.5707963267948966,"scale_x":1.7003089598352215,"scale_y":0.997292171703541,"scale_z":0.999415040540576,"fixed":false},{"item_name":"Window","item_type":3,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/165/whitewindow.js","xpos":886.8841174461031,"ypos":139.1510114697785,"zpos":-105.16400146484375,"rotation":0,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Dresser - White","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/478/we-narrow6white_baked.js","xpos":898.0548281668393,"ypos":35.611997646165,"zpos":201.10860458067486,"rotation":-3.141592653589793,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Window","item_type":3,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/165/whitewindow.js","xpos":534.9620937975317,"ypos":137.60931398864443,"zpos":-227.08399963378906,"rotation":0,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Window","item_type":3,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/165/whitewindow.js","xpos":295.1400146484375,"ypos":141.43383044055196,"zpos":123.2280598724867,"rotation":1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Media Console - White","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/400/cb-clapboard_baked.js","xpos":658.6568227980731,"ypos":67.88999754395999,"zpos":-141.50237235990153,"rotation":-0.8154064090423808,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Blue Rug","item_type":8,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/440/cb-blue-block-60x96.js","xpos":905.8690190229256,"ypos":0.250005,"zpos":44.59927303228528,"rotation":-1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"NYC Poster","item_type":2,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/77/nyc-poster2.js","xpos":1038.448276049687,"ypos":146.22618581237782,"zpos":148.65033715350484,"rotation":-1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Sofa - Grey","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/596/cb-rochelle-gray_baked.js","xpos":356.92671999154373,"ypos":42.54509923821,"zpos":-21.686174295784554,"rotation":1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Coffee Table - Wood","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/68/ik-stockholmcoffee-brown.js","xpos":468.479104587435,"ypos":24.01483158034958,"zpos":-23.468458996048412,"rotation":1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Floor Lamp","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/614/ore-3legged-white_baked.js","xpos":346.697102333121,"ypos":72.163997943445,"zpos":-175.19915302127583,"rotation":0,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Red Chair","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/723/ik-ekero-orange_baked.js","xpos":397.676038151142,"ypos":37.50235073007,"zpos":156.31701312594373,"rotation":2.4062972386507093,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Window","item_type":3,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/165/whitewindow.js","xpos":374.7738207971076,"ypos":138.62749831597068,"zpos":-227.08399963378906,"rotation":0,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Closed Door","item_type":7,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/617/closed-door28x80_baked.js","xpos":637.2176377788675,"ypos":110.80000022010701,"zpos":232.16400146484375,"rotation":3.141592653589793,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false},{"item_name":"Bookshelf","item_type":1,"model_url":"https://blueprint-dev.s3.amazonaws.com/uploads/item_model/model/388/cb-kendallbookcasewalnut_baked.js","xpos":533.1460416453955,"ypos":92.17650034119151,"zpos":207.7644213268835,"rotation":3.141592653589793,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false}]}'
-  blueprint3d.model.loadSerialized(data);
+  data = {"floorplan":{"corners":{"56d9ebd1-91b2-875c-799d-54b3785fca1f":{"x":626.4909999999999,"y":-286.51200000000006},"8f4a050d-e102-3c3f-5af9-3d9133555d76":{"x":211.32799999999995,"y":-286.51200000000006},"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359":{"x":211.32799999999995,"y":232.664},"254656bf-8a53-3987-c810-66b349f49b19":{"x":745.7439999999998,"y":232.664},"11d25193-4411-fbbf-78cb-ae7c0283164b":{"x":1121.9179999999994,"y":232.664},"edf0de13-df9f-cd6a-7d11-9bd13c36ce12":{"x":1121.9179999999994,"y":-144.272},"e7db8654-efe1-bda2-099a-70585874d8c0":{"x":745.7439999999998,"y":-144.272}},"walls":[{"corner1":"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","corner2":"254656bf-8a53-3987-c810-66b349f49b19","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":null,"backEdge":{"planeUuid":"3A396BDD-7610-4260-8806-48F8FE22B2D1","corners":["254656bf-8a53-3987-c810-66b349f49b19","4e312eca-6c4f-30d1-3d9a-a19a9d1ee359"],"vertices":[{"x":740.7439999999998,"y":0,"z":227.664},{"x":216.32799999999995,"y":0,"z":227.664},{"x":216.32799999999995,"y":300,"z":227.664},{"x":740.7439999999998,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false},{"corner1":"254656bf-8a53-3987-c810-66b349f49b19","corner2":"e7db8654-efe1-bda2-099a-70585874d8c0","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":{"planeUuid":"33EF7D3C-3309-4BEC-A701-A7F6FBB0547A","corners":["254656bf-8a53-3987-c810-66b349f49b19","e7db8654-efe1-bda2-099a-70585874d8c0"],"vertices":[{"x":750.7439999999998,"y":0,"z":227.664},{"x":750.7439999999998,"y":0,"z":-139.272},{"x":750.7439999999998,"y":300,"z":-139.272},{"x":750.7439999999998,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"backEdge":{"planeUuid":"460AD9B0-B6F8-4D27-9D05-37DCAB7D021D","corners":["e7db8654-efe1-bda2-099a-70585874d8c0","254656bf-8a53-3987-c810-66b349f49b19"],"vertices":[{"x":740.7439999999998,"y":0,"z":-142.45332338879876},{"x":740.7439999999998,"y":0,"z":227.664},{"x":740.7439999999998,"y":300,"z":227.664},{"x":740.7439999999998,"y":300,"z":-142.45332338879876}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":true},{"corner1":"56d9ebd1-91b2-875c-799d-54b3785fca1f","corner2":"8f4a050d-e102-3c3f-5af9-3d9133555d76","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":null,"backEdge":{"planeUuid":"D4F0681F-3B5B-4AFE-B45D-ECF357F572D2","corners":["8f4a050d-e102-3c3f-5af9-3d9133555d76","56d9ebd1-91b2-875c-799d-54b3785fca1f"],"vertices":[{"x":216.32799999999995,"y":0,"z":-281.51200000000006},{"x":624.1581988054303,"y":0,"z":-281.51200000000006},{"x":624.1581988054303,"y":300,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":-281.51200000000006}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false},{"corner1":"8f4a050d-e102-3c3f-5af9-3d9133555d76","corner2":"4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":null,"backEdge":{"planeUuid":"78B06608-AADD-424E-97DB-3FDFDE700767","corners":["4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","8f4a050d-e102-3c3f-5af9-3d9133555d76"],"vertices":[{"x":216.32799999999995,"y":0,"z":227.664},{"x":216.32799999999995,"y":0,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false},{"corner1":"254656bf-8a53-3987-c810-66b349f49b19","corner2":"11d25193-4411-fbbf-78cb-ae7c0283164b","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"frontEdge":null,"backEdge":{"planeUuid":"D4F871D0-F7F5-4B8D-89C5-1BDB006A6133","corners":["11d25193-4411-fbbf-78cb-ae7c0283164b","254656bf-8a53-3987-c810-66b349f49b19"],"vertices":[{"x":1116.9179999999994,"y":0,"z":227.664},{"x":750.7439999999998,"y":0,"z":227.664},{"x":750.7439999999998,"y":300,"z":227.664},{"x":1116.9179999999994,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false},{"corner1":"11d25193-4411-fbbf-78cb-ae7c0283164b","corner2":"edf0de13-df9f-cd6a-7d11-9bd13c36ce12","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":null,"backEdge":{"planeUuid":"EF1F8FD4-1557-49AF-95F9-CF0224B403CD","corners":["edf0de13-df9f-cd6a-7d11-9bd13c36ce12","11d25193-4411-fbbf-78cb-ae7c0283164b"],"vertices":[{"x":1116.9179999999994,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":0,"z":227.664},{"x":1116.9179999999994,"y":300,"z":227.664},{"x":1116.9179999999994,"y":300,"z":-139.272}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/floor.png"},"isShared":false},{"corner1":"edf0de13-df9f-cd6a-7d11-9bd13c36ce12","corner2":"e7db8654-efe1-bda2-099a-70585874d8c0","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"frontEdge":null,"backEdge":{"planeUuid":"06A76777-3F08-4812-8BF9-355A8E1493FE","corners":["e7db8654-efe1-bda2-099a-70585874d8c0","edf0de13-df9f-cd6a-7d11-9bd13c36ce12"],"vertices":[{"x":750.7439999999998,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":300,"z":-139.272},{"x":750.7439999999998,"y":300,"z":-139.272}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false},{"corner1":"e7db8654-efe1-bda2-099a-70585874d8c0","corner2":"56d9ebd1-91b2-875c-799d-54b3785fca1f","frontTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":0},"backTexture":{"url":"rooms/textures/wallmap.png","stretch":true,"scale":null},"frontEdge":null,"backEdge":{"planeUuid":"22743231-8824-4EE4-B738-1643EFDC307F","corners":["56d9ebd1-91b2-875c-799d-54b3785fca1f","e7db8654-efe1-bda2-099a-70585874d8c0"],"vertices":[{"x":624.1581988054303,"y":0,"z":-281.51200000000006},{"x":740.7439999999998,"y":0,"z":-142.45332338879876},{"x":740.7439999999998,"y":300,"z":-142.45332338879876},{"x":624.1581988054303,"y":300,"z":-281.51200000000006}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},"isShared":false}],"rooms":[{"floorPlane":{"corners":["56d9ebd1-91b2-875c-799d-54b3785fca1f","e7db8654-efe1-bda2-099a-70585874d8c0","254656bf-8a53-3987-c810-66b349f49b19","4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","8f4a050d-e102-3c3f-5af9-3d9133555d76"],"planeUuid":"C0EB5BB5-F6D1-4082-B139-759E0C12BF03","vertices":[{"x":216.32799999999995,"y":-281.51200000000006,"z":0},{"x":216.32799999999995,"y":227.664,"z":0},{"x":740.7439999999998,"y":227.664,"z":0},{"x":740.7439999999998,"y":-142.45332338879876,"z":0},{"x":624.1581988054303,"y":-281.51200000000006,"z":0}],"faces":[[0,4,3],[3,2,1],[1,0,3]],"faceVertexUvs":[[[{"x":216.32799999999995,"y":-281.51200000000006},{"x":624.1581988054303,"y":-281.51200000000006},{"x":740.7439999999998,"y":-142.45332338879876}],[{"x":740.7439999999998,"y":-142.45332338879876},{"x":740.7439999999998,"y":227.664},{"x":216.32799999999995,"y":227.664}],[{"x":216.32799999999995,"y":227.664},{"x":216.32799999999995,"y":-281.51200000000006},{"x":740.7439999999998,"y":-142.45332338879876}]]],"texture":"rooms/textures/floor.png"},"edges":[{"planeUuid":"22743231-8824-4EE4-B738-1643EFDC307F","corners":["56d9ebd1-91b2-875c-799d-54b3785fca1f","e7db8654-efe1-bda2-099a-70585874d8c0"],"vertices":[{"x":624.1581988054303,"y":0,"z":-281.51200000000006},{"x":740.7439999999998,"y":0,"z":-142.45332338879876},{"x":740.7439999999998,"y":300,"z":-142.45332338879876},{"x":624.1581988054303,"y":300,"z":-281.51200000000006}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"460AD9B0-B6F8-4D27-9D05-37DCAB7D021D","corners":["e7db8654-efe1-bda2-099a-70585874d8c0","254656bf-8a53-3987-c810-66b349f49b19"],"vertices":[{"x":740.7439999999998,"y":0,"z":-142.45332338879876},{"x":740.7439999999998,"y":0,"z":227.664},{"x":740.7439999999998,"y":300,"z":227.664},{"x":740.7439999999998,"y":300,"z":-142.45332338879876}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"3A396BDD-7610-4260-8806-48F8FE22B2D1","corners":["254656bf-8a53-3987-c810-66b349f49b19","4e312eca-6c4f-30d1-3d9a-a19a9d1ee359"],"vertices":[{"x":740.7439999999998,"y":0,"z":227.664},{"x":216.32799999999995,"y":0,"z":227.664},{"x":216.32799999999995,"y":300,"z":227.664},{"x":740.7439999999998,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"78B06608-AADD-424E-97DB-3FDFDE700767","corners":["4e312eca-6c4f-30d1-3d9a-a19a9d1ee359","8f4a050d-e102-3c3f-5af9-3d9133555d76"],"vertices":[{"x":216.32799999999995,"y":0,"z":227.664},{"x":216.32799999999995,"y":0,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"D4F0681F-3B5B-4AFE-B45D-ECF357F572D2","corners":["8f4a050d-e102-3c3f-5af9-3d9133555d76","56d9ebd1-91b2-875c-799d-54b3785fca1f"],"vertices":[{"x":216.32799999999995,"y":0,"z":-281.51200000000006},{"x":624.1581988054303,"y":0,"z":-281.51200000000006},{"x":624.1581988054303,"y":300,"z":-281.51200000000006},{"x":216.32799999999995,"y":300,"z":-281.51200000000006}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"}]},{"floorPlane":{"corners":["254656bf-8a53-3987-c810-66b349f49b19","e7db8654-efe1-bda2-099a-70585874d8c0","edf0de13-df9f-cd6a-7d11-9bd13c36ce12","11d25193-4411-fbbf-78cb-ae7c0283164b"],"planeUuid":"11AA2473-B26A-4200-B7B6-FBB6502890FC","vertices":[{"x":1116.9179999999994,"y":227.664,"z":0},{"x":1116.9179999999994,"y":-139.272,"z":0},{"x":750.7439999999998,"y":-139.272,"z":0},{"x":750.7439999999998,"y":227.664,"z":0}],"faces":[[0,3,2],[2,1,0]],"faceVertexUvs":[[[{"x":1116.9179999999994,"y":227.664},{"x":750.7439999999998,"y":227.664},{"x":750.7439999999998,"y":-139.272}],[{"x":750.7439999999998,"y":-139.272},{"x":1116.9179999999994,"y":-139.272},{"x":1116.9179999999994,"y":227.664}]]],"texture":"rooms/textures/floor.png"},"edges":[{"planeUuid":"33EF7D3C-3309-4BEC-A701-A7F6FBB0547A","corners":["254656bf-8a53-3987-c810-66b349f49b19","e7db8654-efe1-bda2-099a-70585874d8c0"],"vertices":[{"x":750.7439999999998,"y":0,"z":227.664},{"x":750.7439999999998,"y":0,"z":-139.272},{"x":750.7439999999998,"y":300,"z":-139.272},{"x":750.7439999999998,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"06A76777-3F08-4812-8BF9-355A8E1493FE","corners":["e7db8654-efe1-bda2-099a-70585874d8c0","edf0de13-df9f-cd6a-7d11-9bd13c36ce12"],"vertices":[{"x":750.7439999999998,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":300,"z":-139.272},{"x":750.7439999999998,"y":300,"z":-139.272}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"},{"planeUuid":"EF1F8FD4-1557-49AF-95F9-CF0224B403CD","corners":["edf0de13-df9f-cd6a-7d11-9bd13c36ce12","11d25193-4411-fbbf-78cb-ae7c0283164b"],"vertices":[{"x":1116.9179999999994,"y":0,"z":-139.272},{"x":1116.9179999999994,"y":0,"z":227.664},{"x":1116.9179999999994,"y":300,"z":227.664},{"x":1116.9179999999994,"y":300,"z":-139.272}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/floor.png"},{"planeUuid":"D4F871D0-F7F5-4B8D-89C5-1BDB006A6133","corners":["11d25193-4411-fbbf-78cb-ae7c0283164b","254656bf-8a53-3987-c810-66b349f49b19"],"vertices":[{"x":1116.9179999999994,"y":0,"z":227.664},{"x":750.7439999999998,"y":0,"z":227.664},{"x":750.7439999999998,"y":300,"z":227.664},{"x":1116.9179999999994,"y":300,"z":227.664}],"faces":[[0,1,2],[0,2,3]],"faceVertexUvs":[[]],"texture":"rooms/textures/wallmap.png"}]}],"entryPoint":{"position":{"x":471.8573913574219,"y":123.23099517822266,"z":182.16400146484375},"rotation":{"x":3.141592653589793,"y":1.2246468525851679e-16,"z":3.141592653589793}}},"items":[{"item_name":"Lamp","item_type":1,"model_url":"models/js/lamp.js","xpos":252.43922814756309,"ypos":74.97145,"zpos":-254.41416671491947,"rotation":0.9022502995443269,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":null},{"item_name":"Open Door","item_type":7,"model_url":"models/js/main_door_open.js","xpos":745.2440185546875,"ypos":123.23099,"zpos":150.74522632463913,"rotation":-1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":"460AD9B0-B6F8-4D27-9D05-37DCAB7D021D"},{"item_name":"Closed Door","item_type":7,"model_url":"models/js/main_door_close.js","xpos":471.857391100313,"ypos":123.23099500000002,"zpos":232.16400146484378,"rotation":3.141592653589793,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":"3A396BDD-7610-4260-8806-48F8FE22B2D1"},{"item_name":"Window","item_type":3,"model_url":"models/js/window4glass.js","xpos":441.83314304743254,"ypos":150.47715,"zpos":-286.0119934082031,"rotation":0,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":"D4F0681F-3B5B-4AFE-B45D-ECF357F572D2"},{"item_name":"Media Console - White","item_type":1,"model_url":"models/js/small_tvset.js","xpos":650.2184521523016,"ypos":63.48478999999999,"zpos":-194.75810039066766,"rotation":-0.8858224068890769,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":null},{"item_name":"Dining Table","item_type":1,"model_url":"models/js/table.js","xpos":395.99466252408945,"ypos":20.72441,"zpos":-61.78368798651758,"rotation":1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":null},{"item_name":"Sofa","item_type":1,"model_url":"models/js/sofa.js","xpos":270.92066483741536,"ypos":38.57799,"zpos":-66.17061466422392,"rotation":1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":null},{"item_name":"Full Bed","item_type":1,"model_url":"models/js/bed.js","xpos":947.9756015399843,"ypos":47.775724999999994,"zpos":-15.5075528610016,"rotation":-1.5707963267948966,"scale_x":1,"scale_y":1,"scale_z":1,"fixed":false,"planeUuid":null}]}
+
+  // data.items = [];
+  blueprint3d.model.loadSerialized(JSON.stringify(data));
 });

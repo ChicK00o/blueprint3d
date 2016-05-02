@@ -5,7 +5,7 @@ var JQUERY = require('jquery');
 var FloorItem = require('../items/floor_item');
 var InWallFloorItem = require('../items/in_wall_floor_item');
 var InWallItem = require('../items/in_wall_item');
-var Item = require('../items/item');
+// var Item = require('../items/item');
 var OnFloorItem = require('../items/on_floor_item');
 var WallFloorItem = require('../items/wall_floor_item');
 var WallItem = require('../items/wall_item');
@@ -25,8 +25,9 @@ var Scene = function(model, textureDir) {
 
   // init item loader
   var loader = new THREE.JSONLoader();
-  loader.crossOrigin = "";
-  
+  loader.setTexturePath(textureDir);
+  // loader.crossOrigin = "";
+
   var item_types = {
     1: FloorItem,
     2: WallItem,
@@ -37,7 +38,7 @@ var Scene = function(model, textureDir) {
   };
 
   // init callbacks
-  this.itemLoadingCallbacks = JQUERY.Callbacks(); 
+  this.itemLoadingCallbacks = JQUERY.Callbacks();
   this.itemLoadedCallbacks = JQUERY.Callbacks(); // Item
   this.itemRemovedCallbacks = JQUERY.Callbacks(); // Item
 
@@ -65,7 +66,7 @@ var Scene = function(model, textureDir) {
   }
 
   this.clearItems = function() {
-    items_copy = items
+    var items_copy = items
     utils.forEach(items, function(item) {
       scope.removeItem(item, true);
     });
@@ -90,7 +91,7 @@ var Scene = function(model, textureDir) {
       var item = new item_types[itemType](
         model,
         metadata, geometry,
-        new THREE.MeshFaceMaterial(materials),
+        new THREE.MultiMaterial(materials),
         position, rotation, scale
       );
       item.fixed = fixed || false;
@@ -101,11 +102,33 @@ var Scene = function(model, textureDir) {
     }
 
     scope.itemLoadingCallbacks.fire();
-    loader.load(
-      fileName,
-      loaderCallback,
-      textureDir
-    );
+    loader.load(fileName, loaderCallback);
+  }
+
+  this.redrawWallItems = function() {
+    var items_copy = items;
+    // var wallEdgePlanes = model.floorplan.wallEdgePlanes();
+    // utils.forEach(wallEdgePlanes, function(wallEdge) {
+    //   console.log(wallEdge.uuid);
+    // });
+    utils.forEach(items_copy, function(item) {
+      if (item instanceof WallItem) {
+        // (item.currentWallEdge.wall.id != item.closestWallEdge().wall.id)
+          // var item_position = item.position.clone();
+          item.changeWallEdge(item.closestWallEdge());
+          // console.log(item.metadata.itemName, item.currentWallEdge.plane.uuid);
+          // if (item_position) {
+          //   // TODO
+          //   item_position.x = item.closestWallEdge().interiorStart().x;
+          // } else {
+          //   item_position.z = item.closestWallEdge().interiorStart().y;
+          // item.translateZ(item.currentWallEdge.interiorStart().y - item.closestWallEdge().interiorStart().y)
+          // }
+          // item.boundMove(item_position);
+          // item.position.copy(item_position);
+          // three_controller.getIntersections()
+      }
+    });
   }
 }
 

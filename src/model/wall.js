@@ -7,12 +7,12 @@ var Wall = function(start, end) {
   this.id = getUuid();
 
   var scope = this;
-  
+
   var start = start;
   var end = end;
 
   this.thickness = 10;
-  this.height = 250;
+  this.height = 300;
 
   // front is the plane from start to end
   // these are of type HalfEdge
@@ -45,7 +45,7 @@ var Wall = function(start, end) {
 
   this.resetFrontBack = function(func) {
     this.frontEdge = null;
-    this.backEdge = null; 
+    this.backEdge = null;
     this.orphan = false;
   }
 
@@ -138,8 +138,8 @@ var Wall = function(start, end) {
   }
 
   this.distanceFrom = function(x, y) {
-    return utils.pointDistanceFromLine(x, y, 
-      this.getStartX(), this.getStartY(), 
+    return utils.pointDistanceFromLine(x, y,
+      this.getStartX(), this.getStartY(),
       this.getEndX(), this.getEndY());
   }
 

@@ -33,7 +33,7 @@ var Item = function(model, metadata, geometry, material, position, rotation, sca
     this.obstructFloorMoves = true;
 
     if (position) {
-        this.position.copy(position);        
+        this.position.copy(position);
         this.position_set = true;
     } else {
         this.position_set = false;
@@ -112,7 +112,7 @@ Item.prototype.placeInRoom = function() {
 };
 
 Item.prototype.initObject = function() {
-    this.placeInRoom();    
+    this.placeInRoom();
     // select and stuff
     this.scene.needsUpdate = true;
 };
@@ -159,7 +159,7 @@ Item.prototype.clickPressed = function(intersection) {
 Item.prototype.clickDragged = function(intersection) {
     if (intersection) {
         this.moveToPosition(
-            intersection.point.sub(this.dragOffset), 
+            intersection.point.sub(this.dragOffset),
             intersection);
     }
 };
@@ -167,9 +167,9 @@ Item.prototype.clickDragged = function(intersection) {
 Item.prototype.rotate = function(intersection) {
     if (intersection) {
         var angle = utils.angle(
-            0, 
-            1, 
-            intersection.point.x - this.position.x, 
+            0,
+            1,
+            intersection.point.x - this.position.x,
             intersection.point.z - this.position.z);
 
         var snapTolerance = Math.PI / 16.0;
@@ -282,7 +282,7 @@ Item.prototype.createGlow = function( color, opacity, ignoreDepth ) {
 		transparent: true,
         depthTest: !ignoreDepth
 	});
-		
+
 	var glow = new THREE.Mesh(this.geometry.clone(), glowMaterial);
 	glow.position.copy(this.position);
 	glow.rotation.copy(this.rotation);

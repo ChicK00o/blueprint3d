@@ -12,8 +12,8 @@ var ThreeEdge = function(scene, edge, controls) {
   var planes = [];
   var basePlanes = []; // always visible
   var texture = null;
-  
-  var lightMap = THREE.ImageUtils.loadTexture("rooms/textures/walllightmap.png");
+  var loader = new THREE.TextureLoader();
+  var lightMap = loader.load("rooms/textures/walllightmap.png");
   var fillerColor = 0xdddddd;
   var sideColor = 0xcccccc;
   var baseColor = 0xdddddd;
@@ -87,7 +87,7 @@ var ThreeEdge = function(scene, edge, controls) {
     scope.visible = (dot >= 0);
 
     // show or hide plans
-    utils.forEach(planes, function(plane) { 
+    utils.forEach(planes, function(plane) {
       plane.visible = scope.visible;
     });
 
@@ -101,7 +101,7 @@ var ThreeEdge = function(scene, edge, controls) {
     utils.forEach(wall.onItems, function(item) {
       item.updateEdgeVisibility(scope.visible, front);
     });
-  } 
+  }
 
 
   function updateTexture(callback) {
@@ -113,10 +113,10 @@ var ThreeEdge = function(scene, edge, controls) {
     var stretch = textureData.stretch;
     var url = textureData.url;
     var scale = textureData.scale;
-    texture = THREE.ImageUtils.loadTexture(url, null, callback);
+    texture = loader.load(url, callback);
     if (!stretch) {
       var height = wall.height;
-      var width = edge.interiorDistance(); 
+      var width = edge.interiorDistance();
       texture.wrapT = THREE.RepeatWrapping;
       texture.wrapS = THREE.RepeatWrapping;
       texture.repeat.set(width/scale, height/scale);
@@ -127,21 +127,21 @@ var ThreeEdge = function(scene, edge, controls) {
   function updatePlanes() {
     var wallMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
-      ambientColor: 0xffffff,
-      //ambient: scope.wall.color,
+      // ambientColor: 0xffffff,
+      // ambient: scope.wall.color,
       side: THREE.FrontSide,
       map: texture,
-      lightMap: lightMap
+      // lightMap: lightMap
     });
-    
+
     var fillerMaterial = new THREE.MeshBasicMaterial({
       color: fillerColor,
       side: THREE.DoubleSide
-    });  
+    });
 
     // exterior plane
     planes.push(makeWall(
-      edge.exteriorStart(), 
+      edge.exteriorStart(),
       edge.exteriorEnd(),
       edge.exteriorTransform,
       edge.invExteriorTransform,
@@ -149,7 +149,7 @@ var ThreeEdge = function(scene, edge, controls) {
 
     // interior plane
     planes.push(makeWall(
-      edge.interiorStart(), 
+      edge.interiorStart(),
       edge.interiorEnd(),
       edge.interiorTransform,
       edge.invInteriorTransform,
@@ -158,21 +158,21 @@ var ThreeEdge = function(scene, edge, controls) {
     // bottom
     // put into basePlanes since this is always visible
     basePlanes.push(buildFiller(
-      edge, 0, 
-      THREE.BackSide, baseColor)); 
+      edge, 0,
+      THREE.BackSide, baseColor));
 
     // top
     planes.push(buildFiller(
-      edge, wall.height, 
+      edge, wall.height,
       THREE.DoubleSide, fillerColor));
 
     // sides
     planes.push(buildSideFillter(
-      edge.interiorStart(), edge.exteriorStart(), 
+      edge.interiorStart(), edge.exteriorStart(),
       wall.height, sideColor));
 
     planes.push(buildSideFillter(
-      edge.interiorEnd(), edge.exteriorEnd(), 
+      edge.interiorEnd(), edge.exteriorEnd(),
       wall.height, sideColor));
   }
 
@@ -237,7 +237,7 @@ var ThreeEdge = function(scene, edge, controls) {
       geometry.faceVertexUvs[0].push([
           vertexToUv(vertA),
           vertexToUv(vertB),
-          vertexToUv(vertC)]);      
+          vertexToUv(vertC)]);
     });
 
     geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
@@ -260,7 +260,7 @@ var ThreeEdge = function(scene, edge, controls) {
       toVec3(p1, height)
     ];
 
-    var geometry = new THREE.Geometry(); 
+    var geometry = new THREE.Geometry();
     utils.forEach(points, function(p){
       geometry.vertices.push(p);
     });
@@ -270,7 +270,7 @@ var ThreeEdge = function(scene, edge, controls) {
     var fillerMaterial = new THREE.MeshBasicMaterial({
       color: color,
       side: THREE.DoubleSide
-    });  
+    });
 
     var filler = new THREE.Mesh(geometry, fillerMaterial);
     return filler;
@@ -287,7 +287,7 @@ var ThreeEdge = function(scene, edge, controls) {
     var fillerMaterial = new THREE.MeshBasicMaterial({
       color: color,
       side: side
-    });  
+    });
 
     var shape = new THREE.Shape(points);
     var geometry = new THREE.ShapeGeometry(shape);

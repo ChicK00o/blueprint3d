@@ -55,7 +55,7 @@ var Corner = function(floorplan, x, y, id) {
       if (Math.abs(corner.x - scope.x) < tolerance) {
         scope.x = corner.x;
         snapped.x = true;
-      } 
+      }
       if (Math.abs(corner.y - scope.y) < tolerance) {
         scope.y = corner.y;
         snapped.y = true;
@@ -81,8 +81,8 @@ var Corner = function(floorplan, x, y, id) {
       this.wallStarts[i].remove();
     }
     for( var i = 0; i < this.wallEnds.length; i++ ) {
-      this.wallEnds[i].remove();  
-    } 
+      this.wallEnds[i].remove();
+    }
     this.remove()
   }
 
@@ -100,14 +100,14 @@ var Corner = function(floorplan, x, y, id) {
   }
 
   this.adjacentCorners = function() {
-    retArray = [];
+    var retArray = [];
     for( var i = 0; i < this.wallStarts.length; i++ ) {
       retArray.push(this.wallStarts[i].getEnd());
     }
     for( var i = 0; i < this.wallEnds.length; i++ ) {
       retArray.push(this.wallEnds[i].getStart());
     }
-    return retArray;   
+    return retArray;
   }
 
   this.isWallConnected = function(wall) {
@@ -120,8 +120,8 @@ var Corner = function(floorplan, x, y, id) {
       if (this.wallEnds[i] == wall) {
         return true;
       }
-    }  
-    return false;      
+    }
+    return false;
   }
 
   this.distanceFrom = function(x, y) {
@@ -141,9 +141,9 @@ var Corner = function(floorplan, x, y, id) {
   this.detachWall = function(wall) {
     utils.removeValue(this.wallStarts, wall);
     utils.removeValue(this.wallEnds, wall);
-    if (this.wallStarts.length == 0 && this.wallEnds.length == 0) {    
+    if (this.wallStarts.length == 0 && this.wallEnds.length == 0) {
       this.remove();
-    }     
+    }
   }
 
   this.attachStart = function(wall) {
@@ -161,7 +161,7 @@ var Corner = function(floorplan, x, y, id) {
         return this.wallStarts[i];
       }
     }
-    return null; 
+    return null;
   }
 
   this.wallFrom = function(corner) {
@@ -169,7 +169,7 @@ var Corner = function(floorplan, x, y, id) {
       if (this.wallEnds[i].getStart() === corner) {
         return this.wallEnds[i];
       }
-    } 
+    }
     return null;
   }
 
@@ -186,8 +186,8 @@ var Corner = function(floorplan, x, y, id) {
       corner.wallStarts[i].setStart( this );
     }
     for( var i = corner.wallEnds.length - 1; i >= 0; i-- ) {
-      corner.wallEnds[i].setEnd( this );         
-    }           
+      corner.wallEnds[i].setEnd( this );
+    }
     // delete the other corner
     corner.removeAll();
     this.removeDuplicateWalls();
@@ -196,6 +196,7 @@ var Corner = function(floorplan, x, y, id) {
 
   this.mergeWithIntersected = function() {
     //console.log('mergeWithIntersected for object: ' + this.type);
+    var obj;
     // check corners
     for( var i = 0; i < floorplan.getCorners().length; i++ ) {
       obj = floorplan.getCorners()[i];
@@ -209,18 +210,18 @@ var Corner = function(floorplan, x, y, id) {
       obj = floorplan.getWalls()[i];
       if (this.distanceFromWall(obj) < tolerance && !this.isWallConnected( obj )) {
         // update position to be on wall
-        var intersection = utils.closestPointOnLine(this.x, this.y, 
-          obj.getStart().x, obj.getStart().y, 
+        var intersection = utils.closestPointOnLine(this.x, this.y,
+          obj.getStart().x, obj.getStart().y,
           obj.getEnd().x, obj.getEnd().y);
         this.x = intersection.x;
         this.y = intersection.y;
         // merge this corner into wall by breaking wall into two parts
-        floorplan.newWall(   
+        floorplan.newWall(
           this, obj.getEnd());
-        obj.setEnd(this); 
+        obj.setEnd(this);
         floorplan.update();
         return true;
-      }         
+      }
     }
     return false;
   }
@@ -232,8 +233,8 @@ var Corner = function(floorplan, x, y, id) {
     var wallStartpoints = {};
     for( var i = this.wallStarts.length - 1; i >= 0; i-- ) {
       if (this.wallStarts[i].getEnd() === this) {
-        // remove zero length wall 
-        this.wallStarts[i].remove();   
+        // remove zero length wall
+        this.wallStarts[i].remove();
       } else if (this.wallStarts[i].getEnd().id in wallEndpoints) {
         // remove duplicated wall
         this.wallStarts[i].remove();
@@ -243,15 +244,15 @@ var Corner = function(floorplan, x, y, id) {
     }
     for( var i = this.wallEnds.length - 1; i >= 0; i-- ) {
       if (this.wallEnds[i].getStart() === this) {
-        // removed zero length wall 
-        this.wallEnds[i].remove();     
+        // removed zero length wall
+        this.wallEnds[i].remove();
       } else if (this.wallEnds[i].getStart().id in wallStartpoints) {
         // removed duplicated wall
         this.wallEnds[i].remove();
       } else {
         wallStartpoints[this.wallEnds[i].getStart().id] = true;
-      }         
-    } 
+      }
+    }
   }
 
 };

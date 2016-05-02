@@ -74,7 +74,7 @@ var ThreeHUD = function(three) {
     if (activeObject) {
       utils.forEach(activeObject.children, function(obj) {
         obj.material.color.set(getColor());
-      });      
+      });
     }
     three.needsUpdate();
   }
@@ -103,14 +103,14 @@ var ThreeHUD = function(three) {
   }
 
   function rotateVector(item) {
-    var vec = new THREE.Vector3(0, 0, 
+    var vec = new THREE.Vector3(0, 0,
       Math.max(item.halfSize.x, item.halfSize.z) + 1.4 + distance);
     return vec;
   }
 
   function makeLineMaterial(rotating) {
-    var mat = new THREE.LineBasicMaterial({ 
-      color: getColor(), 
+    var mat = new THREE.LineBasicMaterial({
+      color: getColor(),
       linewidth: 3
     });
     return mat;
@@ -130,20 +130,20 @@ var ThreeHUD = function(three) {
   }
 
   function makeSphere(item) {
-    var geometry = new THREE.SphereGeometry(4, 16, 16); 
+    var geometry = new THREE.SphereGeometry(4, 16, 16);
     var material = new THREE.MeshBasicMaterial({
       color: getColor()
     });
-    var sphere = new THREE.Mesh(geometry, material); 
+    var sphere = new THREE.Mesh(geometry, material);
     return sphere;
   }
 
   function makeObject(item) {
     var object = new THREE.Object3D();
     var line = new THREE.Line(
-      makeLineGeometry(item), 
+      makeLineGeometry(item),
       makeLineMaterial(scope.rotating),
-      THREE.LinePieces);
+      THREE.LineSegments);
 
     var cone = makeCone(item);
     var sphere = makeSphere(item);

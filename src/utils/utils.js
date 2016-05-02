@@ -40,7 +40,7 @@ utils.closestPointOnLine = function(x, y, x1, y1, x2, y2) {
 
 utils.distance = function( x1, y1, x2, y2 ) {
 	return Math.sqrt(
-		Math.pow(x2 - x1, 2) + 
+		Math.pow(x2 - x1, 2) +
 		Math.pow(y2 - y1, 2));
 }
 
@@ -64,10 +64,10 @@ utils.angle2pi = function( x1, y1, x2, y2 ) {
 // points is array of points with x,y attributes
 utils.isClockwise = function( points ) {
     // make positive
-    subX = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
+    var subX = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
       return p.x;
     })))
-    subY = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
+    var subY = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
       return p.x;
     })))
     var newPoints = utils.map(points, function(p) {
@@ -169,8 +169,19 @@ utils.lineLineIntersect = function(x1,y1,x2,y2, x3,y3,x4,y4) {
 // corners is an array of points with x,y attributes
 // startX and startY are start coords for raycast
 utils.pointInPolygon = function(x,y,corners,startX,startY) {
-    startX = startX || 0;
-    startY = startY || 0;
+    //startX = startX || 0;
+    //startY = startY || 0;
+    //ensure that point(startX, startY) is outside the polygon consists of corners
+    var minx = 0,
+        miny = 0;
+    if(startX === undefined || startY === undefined){
+        for (var i = 0; i < corners.length; i++) {
+            minx = Math.min(minx, corners[i].x);
+            miny = Math.min(minx, corners[i].y);
+        }
+        startX = minx - 10;
+        startY = miny - 10;
+    }
 
     var intersects = 0;
     for (var i = 0; i < corners.length; i++) {
@@ -285,7 +296,7 @@ utils.unique = function(arr, hashFunc) {
         map[hashFunc(arr[i])] = true;
       }
     }
-    return results; 
+    return results;
 }
 
 utils.removeValue = function(arr, value) {
