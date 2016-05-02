@@ -22,7 +22,7 @@ var Model = function(textureDir) {
     // TODO: a much better serialization format.
     this.roomLoadingCallbacks.fire();
 
-    data = JSON.parse(data_json)
+    var data = JSON.parse(data_json)
     scope.newRoom(
       data.floorplan,
       data.items
@@ -32,7 +32,7 @@ var Model = function(textureDir) {
   }
 
   this.exportSerialized = function() {
-    var items_arr = [];
+    var items_arr = [], closedDoorClone, entryPoint, entryRotation;
     var objects = scope.scene.getItems();
     for ( var i = 0; i < objects.length; i++ ) {
       var object = objects[i];
@@ -47,14 +47,31 @@ var Model = function(textureDir) {
         scale_x: object.scale.x,
         scale_y: object.scale.y,
         scale_z: object.scale.z,
-        fixed: object.fixed
+        fixed: object.fixed,
+        planeUuid: object.currentWallEdge ? object.currentWallEdge.plane.uuid : null
       };
+      if (object.metadata.itemName === 'Closed Door') {
+        closedDoorClone = object.clone();
+        closedDoorClone.translateZ(50);
+        entryRotation = closedDoorClone.getWorldRotation();
+        entryPoint = {
+          position: closedDoorClone.getWorldPosition(),
+          rotation: {
+            x: entryRotation.x,
+            y: entryRotation.y,
+            z: entryRotation.z
+          }
+        };
+        closedDoorClone = undefined;
+      }
     }
 
     var room = {
       floorplan: (scope.floorplan.saveFloorplan()),
       items: items_arr
     };
+
+    room.floorplan.entryPoint = entryPoint;
 
     return JSON.stringify(room);
   }
@@ -63,8 +80,8 @@ var Model = function(textureDir) {
     this.scene.clearItems();
     this.floorplan.loadFloorplan(floorplan);
     utils.forEach(items, function(item) {
-      position = new THREE.Vector3(
-        item.xpos, item.ypos, item.zpos)    
+      var position = new THREE.Vector3(
+        item.xpos, item.ypos, item.zpos)
       var metadata = {
         itemName: item.item_name,
         resizable: item.resizable,
@@ -76,11 +93,11 @@ var Model = function(textureDir) {
         y: item.scale_y,
         z: item.scale_z
       }
-      scope.scene.addItem( 
-        item.item_type, 
-        item.model_url, 
+      scope.scene.addItem(
+        item.item_type,
+        item.model_url,
         metadata,
-        position, 
+        position,
         item.rotation,
         scale,
         item.fixed);

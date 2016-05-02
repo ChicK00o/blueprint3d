@@ -4,7 +4,7 @@ var ThreeEdge = require('./three_edge');
 var utils = require('../utils/utils')
 
 // THREE.Scene, Blueprint.Floorplan
-ThreeFloorplan = function(scene, floorplan, controls) {
+var ThreeFloorplan = function(scene, floorplan, controls) {
 
   var scope = this;
 

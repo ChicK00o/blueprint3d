@@ -124,7 +124,7 @@ var ThreeControls = function (object, domElement) {
 		panOffset.normalize();
 
 		panOffset.multiplyScalar(-distance);
-		
+
 		pan.add( panOffset );
 
 	};
@@ -138,10 +138,10 @@ var ThreeControls = function (object, domElement) {
 		panOffset.set( te[4], 0, te[6] );
 		panOffset.normalize();
 		panOffset.multiplyScalar(distance);
-		
+
 		pan.add( panOffset );
 	};
-	
+
 	// main entry point; pass in Vector2 of change desired in pixel space,
 	// right and down are positive
 	this.pan = function ( delta ) {
@@ -221,7 +221,7 @@ var ThreeControls = function (object, domElement) {
 
 		// restrict radius to be between desired limits
 		radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
-		
+
 		// move target to panned location
 		this.target.add( pan );
 
@@ -330,7 +330,7 @@ var ThreeControls = function (object, domElement) {
 
 			panEnd.set( event.clientX, event.clientY );
 			panDelta.subVectors( panEnd, panStart );
-			
+
 			scope.pan( panDelta );
 
 			panStart.copy( panEnd );
@@ -376,7 +376,7 @@ var ThreeControls = function (object, domElement) {
 		if ( scope.enabled === false ) { return; }
 		if ( scope.noKeys === true ) { return; }
 		if ( scope.noPan === true ) { return; }
-	
+
 		switch ( event.keyCode ) {
 
 			case scope.keys.UP:
@@ -394,7 +394,7 @@ var ThreeControls = function (object, domElement) {
 		}
 
 	}
-	
+
 	function touchstart( event ) {
 
 		if ( scope.enabled === false ) { return; }
@@ -486,7 +486,7 @@ var ThreeControls = function (object, domElement) {
 
 				panEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
 				panDelta.subVectors( panEnd, panStart );
-				
+
 				scope.pan( panDelta );
 
 				panStart.copy( panEnd );
@@ -498,8 +498,8 @@ var ThreeControls = function (object, domElement) {
 	}
 
 	function touchend( /* event */ ) {
-		if ( scope.enabled === false ) { 
-			return; 
+		if ( scope.enabled === false ) {
+			return;
 		}
 		state = STATE.NONE;
 	}

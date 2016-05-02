@@ -4,12 +4,14 @@ var utils = require('../utils/utils')
 var ThreeFloor = function(scene, room) {
 
   var scope = this;
-  
+
   this.room = room;
   var scene = scene;
 
   var floorPlane = null;
   var roofPlane = null;
+
+  var loader = new THREE.TextureLoader();
 
   init();
 
@@ -19,7 +21,7 @@ var ThreeFloor = function(scene, room) {
     // roofs look weird, so commented out
     //roofPlane = buildRoof();
   }
-  
+
   function redraw() {
     scope.removeFromScene();
     floorPlane = buildFloor();
@@ -29,14 +31,14 @@ var ThreeFloor = function(scene, room) {
   function buildFloor() {
     var textureSettings = scope.room.getTexture();
     // setup texture
-    var floorTexture = THREE.ImageUtils.loadTexture(textureSettings.url);
+    var floorTexture = loader.load(textureSettings.url);
     floorTexture.wrapS = THREE.RepeatWrapping;
     floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set(1, 1);
-    var floorMaterialTop = new THREE.MeshPhongMaterial({ 
-      map: floorTexture, 
+    var floorMaterialTop = new THREE.MeshPhongMaterial({
+      map: floorTexture,
       side: THREE.DoubleSide,
-      ambient: 0xffffff,
+      // ambient: 0xffffff,
       color: 0xcccccc,
       specular: 0x0a0a0a
     });
@@ -48,7 +50,7 @@ var ThreeFloor = function(scene, room) {
     var points = [];
     utils.forEach( scope.room.interiorCorners, function(corner) {
         points.push(new THREE.Vector2(
-          corner.x / textureScale, 
+          corner.x / textureScale,
           corner.y / textureScale));
     });
     var shape = new THREE.Shape( points );
@@ -66,7 +68,7 @@ var ThreeFloor = function(scene, room) {
 
   function buildRoof() {
     // setup texture
-    var roofMaterial = new THREE.MeshBasicMaterial({ 
+    var roofMaterial = new THREE.MeshBasicMaterial({
       side: THREE.FrontSide,
       color: 0xe5e5e5
     });
@@ -74,7 +76,7 @@ var ThreeFloor = function(scene, room) {
     var points = [];
     utils.forEach( scope.room.interiorCorners, function(corner) {
         points.push(new THREE.Vector2(
-          corner.x, 
+          corner.x,
           corner.y));
     });
     var shape = new THREE.Shape( points );
@@ -83,7 +85,7 @@ var ThreeFloor = function(scene, room) {
 
     roof.rotation.set(Math.PI/2, 0, 0);
     roof.position.y = 250;
-    return roof;  
+    return roof;
   }
 
   this.addToScene = function() {

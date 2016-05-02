@@ -56,11 +56,11 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
   function itemLoaded(item) {
     if (!item.position_set) {
         scope.setSelectedObject(item);
-        switchState(states.DRAGGING);  
+        switchState(states.DRAGGING);
         var pos = item.position.clone();
-        pos.y = 0;   
-        var vec = three.projectVector(pos); 
-        clickPressed(vec); 
+        pos.y = 0;
+        var vec = three.projectVector(pos);
+        clickPressed(vec);
     }
     item.position_set = true;
   }
@@ -78,9 +78,9 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
     var intersection = scope.itemIntersection(mouse, selectedObject);
     if (intersection) {
       if (scope.isRotating()) {
-        selectedObject.rotate(intersection);        
+        selectedObject.rotate(intersection);
       } else {
-        selectedObject.clickDragged(intersection);                
+        selectedObject.clickDragged(intersection);
       }
     }
   }
@@ -89,19 +89,24 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
     // invoked as a callback to event in Scene
     if (item === selectedObject) {
       selectedObject.setUnselected();
-      selectedObject.mouseOff();  
-      scope.setSelectedObject(null);  
+      selectedObject.mouseOff();
+      scope.setSelectedObject(null);
     }
   }
 
   function setGroundPlane() {
     // ground plane used to find intersections
     var size = 10000;
-    plane = new THREE.Mesh( 
-      new THREE.PlaneGeometry(size, size), 
+    plane = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(size, size),
       new THREE.MeshBasicMaterial());
     plane.rotation.x = -Math.PI/2;
-    plane.visible = false;
+
+    // raycast requires plane to be visible
+    plane.visible = true;
+    plane.material.transparent = true;
+    plane.material.opacity = 0;
+
     scene.add(plane);
   }
 
@@ -117,7 +122,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
         var wall = wallIntersects[0].object.edge;
         three.wallClicked.fire(wall);
         return;
-      } 
+      }
 
       // check floors
       var floorPlanes = model.floorplan.floorPlanes();
@@ -131,7 +136,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
 
       three.nothingClicked.fire();
     }
-  
+
   }
 
   function mouseMoveEvent(event) {
@@ -144,7 +149,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
       mouse.y = event.clientY;
 
       if (!mouseDown) {
-        updateIntersections();        
+        updateIntersections();
       }
 
       switch(state) {
@@ -161,7 +166,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
           hud.update();
           scope.needsUpdate = true;
           break;
-      }      
+      }
     }
   }
 
@@ -183,7 +188,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
           } else if (intersectedObject != null) {
             scope.setSelectedObject(intersectedObject);
             if (!intersectedObject.fixed) {
-              switchState(states.DRAGGING);              
+              switchState(states.DRAGGING);
             }
           }
           break;
@@ -193,7 +198,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
             if (!intersectedObject.fixed) {
               switchState(states.DRAGGING);
             }
-          } 
+          }
           break;
         case states.DRAGGING:
         case states.ROTATING:
@@ -305,7 +310,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
         hud.setMouseover(true);
         intersectedObject = null;
         return;
-      } 
+      }
     }
     rotateMouseOver = false;
     hud.setMouseover(false);
@@ -318,7 +323,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
       return remove;
     });*/
     var intersects = scope.getIntersections(
-      mouse, 
+      mouse,
       items,
       false, true);
 
@@ -398,7 +403,7 @@ var ThreeController = function(three, model, camera, element, controls, hud) {
         var dot = intersection.face.normal.dot(direction);
         return (dot > 0)
       });
-    } 
+    }
     return intersections;
   }
 

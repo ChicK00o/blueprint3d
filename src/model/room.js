@@ -13,7 +13,7 @@ var Polygon = require('polygon')
 var HalfEdge = require('./half_edge')
 
 var Room = function(floorplan, corners) {
- 
+
   var scope = this;
 
   // ordered CCW
@@ -22,14 +22,14 @@ var Room = function(floorplan, corners) {
 
   this.interiorCorners = [];
   this.edgePointer = null;
-  
+
   // floor plane for intersection testing
   this.floorPlane = null;
 
   this.customTexture = false;
 
   var defaultTexture = {
-    url: "rooms/textures/hardwood.png",
+    url: "rooms/textures/floor.png",
     scale: 400
   }
 
@@ -68,7 +68,7 @@ var Room = function(floorplan, corners) {
     var points = [];
     utils.forEach( scope.interiorCorners, function(corner) {
         points.push(new THREE.Vector2(
-          corner.x, 
+          corner.x,
           corner.y));
     });
     var shape = new THREE.Shape(points);
@@ -77,7 +77,7 @@ var Room = function(floorplan, corners) {
       new THREE.MeshBasicMaterial({
         side: THREE.DoubleSide
       }));
-    scope.floorPlane.visible = false;
+    // scope.floorPlane.visible = false;
     scope.floorPlane.rotation.set(Math.PI/2, 0, 0);
     scope.floorPlane.room = scope; // js monkey patch
   }
@@ -110,7 +110,7 @@ var Room = function(floorplan, corners) {
     var prevEdge = null;
     var firstEdge = null;
 
-    for (i = 0; i < corners.length; i++) {
+    for (var i = 0; i < corners.length; i++) {
 
       var firstCorner = corners[i];
       var secondCorner = corners[(i + 1) % corners.length];

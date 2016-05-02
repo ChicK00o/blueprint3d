@@ -40,7 +40,7 @@ utils.closestPointOnLine = function(x, y, x1, y1, x2, y2) {
 
 utils.distance = function( x1, y1, x2, y2 ) {
 	return Math.sqrt(
-		Math.pow(x2 - x1, 2) + 
+		Math.pow(x2 - x1, 2) +
 		Math.pow(y2 - y1, 2));
 }
 
@@ -64,10 +64,10 @@ utils.angle2pi = function( x1, y1, x2, y2 ) {
 // points is array of points with x,y attributes
 utils.isClockwise = function( points ) {
     // make positive
-    subX = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
+    var subX = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
       return p.x;
     })))
-    subY = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
+    var subY = Math.min(0, Math.min.apply(null, utils.map(points, function(p) {
       return p.x;
     })))
     var newPoints = utils.map(points, function(p) {
@@ -296,7 +296,7 @@ utils.unique = function(arr, hashFunc) {
         map[hashFunc(arr[i])] = true;
       }
     }
-    return results; 
+    return results;
 }
 
 utils.removeValue = function(arr, value) {
